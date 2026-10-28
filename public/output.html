@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Projection Output</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; cursor: none; }
+  #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: #000; overflow: hidden; }
+  .win { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; background: #000; will-change: transform; }
+  .win video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }
+  .win .outline { position: absolute; inset: 0; box-sizing: border-box; border: 4px solid #ff6a00;
+    background:
+      linear-gradient(to top right, transparent calc(50% - 1px), #ff6a00 50%, transparent calc(50% + 1px)),
+      linear-gradient(to bottom right, transparent calc(50% - 1px), #ff6a00 50%, transparent calc(50% + 1px));
+    pointer-events: none; }
+  .win .label { position: absolute; left: 12px; top: 8px; font: 700 28px/1 system-ui, sans-serif; color: #ff6a00;
+    text-shadow: 0 0 4px #000; }
+  #grid { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 5;
+    background-image:
+      linear-gradient(rgba(255,255,255,.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.55) 1px, transparent 1px);
+    background-size: 120px 120px; }
+  #blackout { position: absolute; inset: 0; background: #000; display: none; z-index: 9; }
+  #conn { position: fixed; right: 6px; bottom: 6px; font: 12px system-ui; color: #f55; display: none; z-index: 20; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="grid"></div><div id="blackout"></div></div>
+<div id="conn">disconnected</div>
+<script src="homography.js"></script>
+<script src="output.js"></script>
+</body>
+</html>

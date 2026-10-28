@@ -1,0 +1,21 @@
+{
+  "name": "pi-projection-mapper",
+  "version": "0.1.0",
+  "description": "Multi-window video projection mapper for Raspberry Pi with a web control UI, per-window keystone and independent playback.",
+  "license": "MIT",
+  "private": true,
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "ws": "^8.18.0"
+  }
+}

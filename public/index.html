@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Projection Mapper</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>🎃 Projection Mapper</h1>
+  <span id="conn" class="pill">connecting…</span>
+  <div class="spacer"></div>
+  <button id="playAll" title="Play all windows">▶ All</button>
+  <button id="pauseAll" title="Pause all windows">⏸ All</button>
+  <label class="chk"><input type="checkbox" id="showGrid"> Grid</label>
+  <label class="chk"><input type="checkbox" id="blackout"> Blackout</label>
+  <a href="output.html" target="_blank" class="btn">Open output ↗</a>
+</header>
+
+<main>
+  <section id="stageCol">
+    <div id="stageWrap">
+      <iframe id="preview" title="Live preview"></iframe>
+      <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="row hint">
+      <span>Drag a window to move, drag a corner to keystone. Arrow keys nudge the selected corner (Shift = 10px). Mouse wheel scales.</span>
+      <div class="spacer"></div>
+      <label class="chk"><input type="checkbox" id="livePreview" checked> Live video</label>
+      <label>Canvas
+        <input type="number" id="canvasW" min="320" max="8192"> ×
+        <input type="number" id="canvasH" min="240" max="8192">
+      </label>
+    </div>
+  </section>
+
+  <aside id="panel">
+    <div class="card">
+      <div class="row">
+        <h2>Windows</h2><div class="spacer"></div>
+        <button id="addWin">+ Add window</button>
+      </div>
+      <ul id="winList"></ul>
+    </div>
+
+    <div id="winPanel" class="card hidden">
+      <div class="row">
+        <input id="wName" class="grow" placeholder="Name">
+        <label class="chk"><input type="checkbox" id="wEnabled"> On</label>
+        <label class="chk"><input type="checkbox" id="wOutline"> Outline</label>
+        <button id="wDelete" class="danger" title="Delete window">🗑</button>
+      </div>
+
+      <h3>Playback</h3>
+      <div class="row">
+        <button id="bPrev" title="Previous">⏮</button>
+        <button id="bPlay" title="Play / pause">⏸</button>
+        <button id="bRestart" title="Restart">↺</button>
+        <button id="bNext" title="Next">⏭</button>
+        <input id="seek" type="range" min="0" max="1000" value="0" class="grow">
+        <span id="timeLbl" class="mono">0:00 / 0:00</span>
+      </div>
+      <div id="nowPlaying" class="muted"></div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="wMuted"> Mute</label>
+        <input id="wVolume" type="range" min="0" max="100" class="grow" title="Volume">
+        <label>Speed <select id="wRate">
+          <option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1×</option>
+          <option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option>
+        </select></label>
+      </div>
+      <div class="row">
+        <label>Loop <select id="wLoop">
+          <option value="all">Playlist</option><option value="one">Single clip</option><option value="none">Play once</option>
+        </select></label>
+        <label class="chk"><input type="checkbox" id="wShuffle"> Shuffle</label>
+      </div>
+
+      <h3>Source</h3>
+      <ol id="playlist"></ol>
+      <div class="row">
+        <select id="libPick" class="grow"></select>
+        <button id="libAdd">Add</button>
+      </div>
+      <div class="row">
+        <input id="urlIn" class="grow" placeholder="…or http(s):// video URL (mp4/webm)">
+        <button id="urlAdd">Add</button>
+      </div>
+
+      <h3>Appearance</h3>
+      <div class="row">
+        <label>Fit <select id="wFit"><option value="cover">Fill (crop)</option><option value="contain">Fit (letterbox)</option><option value="fill">Stretch</option></select></label>
+        <label class="chk"><input type="checkbox" id="wFlipH"> Flip H</label>
+        <label class="chk"><input type="checkbox" id="wFlipV"> Flip V</label>
+      </div>
+      <div class="row"><label class="lbl">Opacity</label><input id="wOpacity" type="range" min="0" max="100" class="grow"></div>
+      <div class="row"><label class="lbl">Brightness</label><input id="wBright" type="range" min="0" max="200" class="grow"></div>
+
+      <h3>Geometry</h3>
+      <div class="row">
+        <label>Aspect <select id="wAspect">
+          <option value="">custom</option>
+          <option value="16:9">16:9</option><option value="4:3">4:3</option><option value="1:1">1:1</option>
+          <option value="3:4">3:4</option><option value="9:16">9:16</option><option value="2:1">2:1</option><option value="1:2">1:2</option>
+        </select></label>
+        <input id="wW" type="number" min="16" class="num"> ×
+        <input id="wH" type="number" min="16" class="num">
+      </div>
+      <div class="row">
+        <button id="gShrink">− Size</button>
+        <button id="gGrow">+ Size</button>
+        <button id="gReset" title="Remove keystone, restore a straight rectangle">Reset keystone</button>
+        <button id="gCenter">Center</button>
+      </div>
+      <pre id="corners" class="mono muted"></pre>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <h2>Media</h2><div class="spacer"></div>
+        <button id="upBtn">⬆ Upload</button>
+        <input id="upIn" type="file" accept="video/*,.mkv" multiple hidden>
+      </div>
+      <div id="upStatus" class="muted"></div>
+      <ul id="mediaList"></ul>
+    </div>
+  </aside>
+</main>
+<script src="homography.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
