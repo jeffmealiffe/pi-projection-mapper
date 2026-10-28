@@ -46,3 +46,7 @@ ul, ol { list-style: none; margin: 6px 0; padding: 0; }
 #mediaList li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #mediaList li .size { color: var(--muted); font-size: 12px; }
 li button { padding: 1px 7px; }
+#sceneList li { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; background: #211a2b; margin-bottom: 4px; }
+#sceneList li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sceneList li .go { background: var(--accent2); border-color: var(--accent2); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--accent); word-break: break-all; }

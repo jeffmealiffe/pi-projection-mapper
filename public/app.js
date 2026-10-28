@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const SVGNS = 'http://www.w3.org/2000/svg';
 
-  let state = { canvas: { w: 1920, h: 1080 }, blackout: false, showGrid: false, windows: [] };
+  let state = { canvas: { w: 1920, h: 1080 }, blackout: false, showGrid: false, windows: [], scenes: [] };
   let media = [];
   let status = {}; // window id -> latest playback status from the output page
   let selId = null;
@@ -34,7 +34,7 @@
       switch (msg.type) {
         case 'hello': {
           const { windows, ...g } = msg.state;
-          state = { ...g, windows };
+          state = { ...g, windows, scenes: g.scenes || [] };
           media = msg.media;
           if (!sel()) selId = state.windows[0] ? state.windows[0].id : null;
           renderAll();
@@ -56,6 +56,10 @@
           renderAll();
           break;
         }
+        case 'scenes':
+          state.scenes = msg.scenes;
+          renderScenes();
+          break;
         case 'media':
           media = msg.media;
           renderMedia();
@@ -256,11 +260,42 @@
     if (document.activeElement !== $('canvasW')) $('canvasW').value = state.canvas.w;
     if (document.activeElement !== $('canvasH')) $('canvasH').value = state.canvas.h;
     renderOverlay();
+    renderScenes();
     renderWinList();
     renderPlaylist();
     renderLibPick();
     renderMedia();
     syncPanel();
+  }
+
+  function renderScenes() {
+    const ul = $('sceneList');
+    ul.replaceChildren();
+    for (const sc of state.scenes) {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = sc.name;
+      name.title = location.origin + '/api/scenes/' + encodeURIComponent(sc.name) + '/apply';
+      const go = btn('▶ Apply', 'Apply this scene now', () => send({ type: 'applyScene', id: sc.id }));
+      go.className = 'go';
+      li.append(
+        name,
+        go,
+        btn('⟳', 'Overwrite with the current state', () => {
+          if (confirm(`Overwrite scene "${sc.name}" with what is set up now?`)) send({ type: 'saveScene', id: sc.id });
+        }),
+        btn('✎', 'Rename', () => {
+          const n = prompt('Scene name', sc.name);
+          if (n) send({ type: 'renameScene', id: sc.id, name: n });
+        }),
+        btn('✕', 'Delete scene', () => {
+          if (confirm(`Delete scene "${sc.name}"?`)) send({ type: 'deleteScene', id: sc.id });
+        })
+      );
+      ul.appendChild(li);
+    }
+    if (!state.scenes.length) ul.innerHTML = '<li class="muted">No scenes yet. Set up your windows, then save.</li>';
   }
 
   function renderWinList() {
@@ -463,6 +498,10 @@
       }
     }, 50);
     setTimeout(() => clearInterval(t), 2000);
+  });
+  bind('sceneSave', 'click', () => {
+    send({ type: 'saveScene', name: $('sceneName').value.trim() });
+    $('sceneName').value = '';
   });
   bind('livePreview', 'change', (e) => loadPreview(e.target.checked));
 

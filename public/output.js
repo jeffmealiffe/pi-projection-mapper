@@ -159,6 +159,14 @@
     const rec = wins.get(msg.id);
     if (!rec) return;
     switch (msg.action) {
+      case 'reset': // scene change: back to first clip, from the start
+        if (rec.idx !== 0) {
+          rec.idx = 0;
+          loadCurrent(rec);
+        } else {
+          rec.video.currentTime = 0;
+        }
+        break;
       case 'restart':
         rec.video.currentTime = 0;
         if (rec.w.playing) rec.video.play().catch(() => {});
@@ -200,7 +208,7 @@
       const msg = JSON.parse(ev.data);
       switch (msg.type) {
         case 'hello': {
-          const { windows, ...g } = msg.state;
+          const { windows, scenes, ...g } = msg.state;
           global = g;
           applyGlobal();
           setWindows(windows);

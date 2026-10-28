@@ -69,12 +69,59 @@ function sanitizeWindow(w) {
   };
 }
 
+// ---- scenes ---------------------------------------------------------------
+// A scene snapshots what each window plays and how it looks (not where it is:
+// size/quad/name stay put so switching scenes never disturbs alignment).
+
+const SCENE_KEYS = [
+  'enabled', 'playlist', 'loopMode', 'shuffle', 'playing', 'muted', 'volume', 'rate',
+  'fit', 'opacity', 'brightness', 'flipH', 'flipV',
+];
+
+function pickSceneKeys(w) {
+  const out = {};
+  for (const k of SCENE_KEYS) if (k in w) out[k] = w[k];
+  return out;
+}
+
+function sanitizeScene(sc) {
+  const entries = {};
+  for (const [id, e] of Object.entries(sc.windows || {})) {
+    // run through window validation, then keep only the keys that were present
+    const clean = sanitizeWindow({ ...e, id });
+    entries[id] = pickSceneKeys(Object.fromEntries(Object.keys(e).map((k) => [k, clean[k]])));
+  }
+  return {
+    id: String(sc.id || 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)),
+    name: String(sc.name ?? 'Scene').slice(0, 60),
+    blackout: !!sc.blackout,
+    windows: entries,
+  };
+}
+
+function captureScene(state, name, id) {
+  const windows = {};
+  for (const w of state.windows) windows[w.id] = pickSceneKeys(w);
+  return sanitizeScene({ id, name, blackout: state.blackout, windows });
+}
+
+// Returns the windows with the scene applied; windows the scene doesn't know are left alone.
+function applyScene(state, scene) {
+  return state.windows.map((w) => (scene.windows[w.id] ? sanitizeWindow({ ...w, ...scene.windows[w.id] }) : w));
+}
+
+function findScene(state, key) {
+  const k = String(key).toLowerCase();
+  return state.scenes.find((s) => s.id === key) || state.scenes.find((s) => s.name.toLowerCase() === k);
+}
+
 function defaultState() {
   return {
     canvas: { w: 1920, h: 1080 },
     blackout: false,
     showGrid: false,
     windows: [],
+    scenes: [],
   };
 }
 
@@ -86,7 +133,11 @@ function sanitizeState(s) {
     blackout: !!s.blackout,
     showGrid: !!s.showGrid,
     windows: (Array.isArray(s.windows) ? s.windows : []).map(sanitizeWindow),
+    scenes: (Array.isArray(s.scenes) ? s.scenes : []).map(sanitizeScene).slice(0, 100),
   };
 }
 
-module.exports = { defaultState, defaultWindow, sanitizeState, sanitizeWindow, rectQuad };
+module.exports = {
+  defaultState, defaultWindow, sanitizeState, sanitizeWindow, rectQuad,
+  sanitizeScene, captureScene, applyScene, findScene,
+};

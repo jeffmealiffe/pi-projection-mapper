@@ -38,6 +38,16 @@
   <aside id="panel">
     <div class="card">
       <div class="row">
+        <h2>Scenes</h2><div class="spacer"></div>
+        <input id="sceneName" placeholder="New scene name" class="grow">
+        <button id="sceneSave" title="Snapshot every window's playlist, playback and appearance">+ Save current</button>
+      </div>
+      <ul id="sceneList"></ul>
+      <div class="muted" id="sceneHelp">Trigger from anywhere: <code>/api/scenes/&lt;name&gt;/apply</code> (GET or POST)</div>
+    </div>
+
+    <div class="card">
+      <div class="row">
         <h2>Windows</h2><div class="spacer"></div>
         <button id="addWin">+ Add window</button>
       </div>

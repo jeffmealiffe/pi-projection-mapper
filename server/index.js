@@ -11,7 +11,9 @@ const http = require('http');
 const express = require('express');
 const multer = require('multer');
 const { WebSocketServer } = require('ws');
-const { defaultState, defaultWindow, sanitizeState, sanitizeWindow } = require('./state');
+const {
+  defaultState, defaultWindow, sanitizeState, sanitizeWindow, captureScene, applyScene, findScene,
+} = require('./state');
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = path.join(__dirname, '..');
@@ -96,6 +98,54 @@ app.delete('/api/media/:name', (req, res) => {
 
 app.get('/api/state', (_req, res) => res.json(state));
 
+// ---- scenes + trigger endpoints (for HomeSeer, Home Assistant, curl, ...) ----
+// Apply by id or case-insensitive name. GET is allowed so a plain URL works as a trigger.
+
+function runScene(sc) {
+  state.windows = applyScene(state, sc);
+  state.blackout = sc.blackout;
+  saveSoon();
+  broadcast({ type: 'global', global: globalOf(state) });
+  broadcast({ type: 'windows', windows: state.windows });
+  for (const id of Object.keys(sc.windows)) broadcast({ type: 'cmd', id, action: 'reset' });
+}
+
+function sceneRoute(req, res) {
+  const sc = findScene(state, req.params.key);
+  if (!sc) return res.status(404).json({ error: 'no such scene' });
+  runScene(sc);
+  res.json({ ok: true, scene: sc.name });
+}
+app.get('/api/scenes', (_req, res) => res.json(state.scenes.map(({ id, name }) => ({ id, name }))));
+app.get('/api/scenes/:key/apply', sceneRoute);
+app.post('/api/scenes/:key/apply', sceneRoute);
+
+function blackoutRoute(on) {
+  return (_req, res) => {
+    state.blackout = on;
+    saveSoon();
+    broadcast({ type: 'global', global: globalOf(state) });
+    res.json({ ok: true, blackout: on });
+  };
+}
+for (const m of ['get', 'post']) {
+  app[m]('/api/blackout/on', blackoutRoute(true));
+  app[m]('/api/blackout/off', blackoutRoute(false));
+}
+
+function playAllRoute(playing) {
+  return (_req, res) => {
+    state.windows = state.windows.map((w) => ({ ...w, playing }));
+    saveSoon();
+    broadcast({ type: 'windows', windows: state.windows });
+    res.json({ ok: true, playing });
+  };
+}
+for (const m of ['get', 'post']) {
+  app[m]('/api/play', playAllRoute(true));
+  app[m]('/api/pause', playAllRoute(false));
+}
+
 // ---- websocket -----------------------------------------------------------
 
 const server = http.createServer(app);
@@ -107,7 +157,7 @@ function broadcast(msg, except) {
 }
 
 wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'hello', state, media: listMedia() }));
+  ws.send(JSON.stringify({ type: 'hello', state, media: listMedia() })); // state includes scenes
 
   ws.on('message', (raw) => {
     let msg;
@@ -119,7 +169,7 @@ wss.on('connection', (ws) => {
     switch (msg.type) {
       // Patch global settings: { type:'global', patch:{ canvas, blackout, showOutlines, ... } }
       case 'global': {
-        state = sanitizeState({ ...state, ...msg.patch, windows: state.windows });
+        state = sanitizeState({ ...state, ...msg.patch, windows: state.windows, scenes: state.scenes });
         saveSoon();
         broadcast({ type: 'global', global: globalOf(state) }, ws); // sender already applied it locally
         break;
@@ -153,6 +203,33 @@ wss.on('connection', (ws) => {
         broadcast({ type: 'windows', windows: state.windows });
         break;
       }
+      // Scenes: save current playback/appearance as a scene (new, or overwrite with id), apply, rename, delete.
+      case 'saveScene': {
+        const old = state.scenes.find((s) => s.id === msg.id);
+        const sc = captureScene(state, String(msg.name || (old && old.name) || 'Scene ' + (state.scenes.length + 1)), old && old.id);
+        if (old) state.scenes[state.scenes.indexOf(old)] = sc;
+        else state.scenes.push(sc);
+        saveSoon();
+        broadcast({ type: 'scenes', scenes: state.scenes });
+        break;
+      }
+      case 'renameScene': {
+        const sc = state.scenes.find((s) => s.id === msg.id);
+        if (sc) sc.name = String(msg.name || sc.name).slice(0, 60);
+        saveSoon();
+        broadcast({ type: 'scenes', scenes: state.scenes });
+        break;
+      }
+      case 'deleteScene':
+        state.scenes = state.scenes.filter((s) => s.id !== msg.id);
+        saveSoon();
+        broadcast({ type: 'scenes', scenes: state.scenes });
+        break;
+      case 'applyScene': {
+        const sc = state.scenes.find((s) => s.id === msg.id);
+        if (sc) runScene(sc);
+        break;
+      }
       // Transient playback commands (not persisted): restart, seek, next, prev.
       case 'cmd':
         broadcast({ type: 'cmd', id: msg.id, action: msg.action, value: msg.value });
@@ -166,7 +243,7 @@ wss.on('connection', (ws) => {
 });
 
 function globalOf(s) {
-  const { windows, ...rest } = s;
+  const { windows, scenes, ...rest } = s;
   return rest;
 }
 

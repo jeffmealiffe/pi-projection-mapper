@@ -37,3 +37,18 @@ test('sanitizeState tolerates garbage', () => {
   assert.deepStrictEqual(s.windows, []);
   assert.strictEqual(s.canvas.w, 1920);
 });
+
+test('scenes capture playback but not geometry, and apply by id or name', () => {
+  const { captureScene, applyScene, findScene, sanitizeState, defaultWindow } = require('../server/state.js');
+  const a = { ...defaultWindow(1), id: 'a', playlist: ['x.mp4'] };
+  let st = sanitizeState({ windows: [a] });
+  const sc = captureScene(st, 'Spooky', 's1');
+  assert.ok(!('quad' in sc.windows.a) && !('name' in sc.windows.a));
+  st.scenes = [sc];
+  // change playlist + geometry, then apply the scene
+  st.windows[0] = { ...st.windows[0], playlist: ['y.mp4'], quad: [[0, 0], [9, 0], [9, 9], [0, 9]] };
+  const out = applyScene(st, findScene(st, 'spooky'));
+  assert.deepStrictEqual(out[0].playlist, ['x.mp4']);
+  assert.deepStrictEqual(out[0].quad, [[0, 0], [9, 0], [9, 9], [0, 9]]);
+  assert.strictEqual(findScene(st, 's1').name, 'Spooky');
+});

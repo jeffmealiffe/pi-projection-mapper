@@ -10,6 +10,7 @@ Built for Halloween rear-projection onto small windows, but works for any multi-
   (playlist / single clip / once), shuffle.
 - **Independent sources**: each window has its own playlist of uploaded clips or `http(s)` video URLs.
 - **Appearance**: fit (crop/letterbox/stretch), opacity, brightness, flip H/V, stacking order.
+- **Scenes**: save every window's playlist, playback and appearance (and blackout) as a named scene, apply with one click or over HTTP. Geometry/keystone is never part of a scene, so switching scenes can't break alignment.
 - **Alignment aids**: calibration grid, per-window outline, blackout.
 - **Live preview** in the control page, multi-client safe (phone + laptop at once), state persists across restarts.
 
@@ -51,6 +52,18 @@ npm start          # control UI on :3000, output at /output.html
 
 Environment: `PORT` (3000), `DATA_DIR` (`./data`, holds `state.json`), `MEDIA_DIR` (`./media`).
 
+## Triggering scenes from other systems
+
+Plain HTTP, GET or POST (so it works from HomeSeer, Home Assistant, a motion-sensor script, `curl`...). A scene is
+matched by id or case-insensitive name; applying it restarts its clips from the first item.
+
+```bash
+curl http://pi.local:3000/api/scenes                  # list scenes
+curl http://pi.local:3000/api/scenes/Scary/apply      # apply a scene (URL-encode spaces: Jump%20Scare)
+curl http://pi.local:3000/api/blackout/on             # or /off
+curl http://pi.local:3000/api/pause                   # or /play (all windows)
+```
+
 ## Performance tips for the Pi
 
 - **Pre-scale clips** to about the size the window occupies on the projector. A 4K clip in a 300 px window wastes decode time.
@@ -61,7 +74,7 @@ Environment: `PORT` (3000), `DATA_DIR` (`./data`, holds `state.json`), `MEDIA_DI
 
 ## Security
 
-There is **no authentication**: anyone on the network can reach the control UI and upload files. Keep it on a
+There is **no authentication**: anyone on the network can reach the control UI and upload files. The trigger endpoints are unauthenticated too. Keep it on a
 trusted LAN (or firewall/VPN it). The server only serves files from `MEDIA_DIR` and restricts uploads to video extensions.
 
 ## Layout
