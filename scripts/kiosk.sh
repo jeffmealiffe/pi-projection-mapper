@@ -8,7 +8,11 @@ BROWSER="$(command -v chromium-browser || command -v chromium || true)"
 # Wait for the server so we don't start on an error page.
 for _ in $(seq 1 60); do curl -fs "${URL%/output.html}/api/state" >/dev/null && break; sleep 1; done
 
-exec "$BROWSER" \
+# Pi OS Bookworm/Trixie run labwc (Wayland); Chromium otherwise tries X11 and exits.
+OZONE=()
+[ -n "${WAYLAND_DISPLAY:-}" ] && OZONE=(--ozone-platform=wayland)
+
+exec "$BROWSER" "${OZONE[@]}" \
   --kiosk --noerrdialogs --disable-infobars --incognito \
   --autoplay-policy=no-user-gesture-required \
   --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 \
