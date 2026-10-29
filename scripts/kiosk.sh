@@ -15,6 +15,7 @@ OZONE=()
 exec "$BROWSER" "${OZONE[@]}" \
   --kiosk --noerrdialogs --disable-infobars --incognito \
   --autoplay-policy=no-user-gesture-required \
+  --password-store=basic \
   --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 \
   --check-for-update-interval=31536000 \
   --user-data-dir="${HOME}/.config/projection-mapper-chromium" \
