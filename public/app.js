@@ -401,7 +401,8 @@
     if (!seeking) $('seek').value = s.duration ? Math.round((s.time / s.duration) * 1000) : 0;
     $('timeLbl').textContent = `${fmt(s.time)} / ${fmt(s.duration)}`;
     const item = w.playlist[s.idx];
-    $('nowPlaying').textContent = s.error ? '⚠ ' + s.error : item ? 'Now: ' + item : 'Nothing queued — add a clip below';
+    const drop = s.frames ? ` (dropped ${s.dropped}/${s.frames} frames)` : '';
+    $('nowPlaying').textContent = s.error ? '⚠ ' + s.error : item ? 'Now: ' + item + drop : 'Nothing queued — add a clip below';
     if (s.idx !== lastIdx) {
       lastIdx = s.idx;
       renderPlaylist();

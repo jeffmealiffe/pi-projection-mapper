@@ -243,12 +243,15 @@
       const status = [];
       for (const [id, rec] of wins) {
         const v = rec.video;
+        const q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null;
         status.push({
           id,
           idx: rec.idx,
           time: v.currentTime || 0,
           duration: isFinite(v.duration) ? v.duration : 0,
           paused: v.paused,
+          frames: q ? q.totalVideoFrames : 0,
+          dropped: q ? q.droppedVideoFrames : 0,
           error: rec.lastError,
         });
       }
