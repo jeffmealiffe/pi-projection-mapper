@@ -66,6 +66,18 @@ curl http://pi.local:3000/api/pause                   # or /play (all windows)
 
 ## Performance tips for the Pi
 
+Measured on a **Raspberry Pi 3B** (Pi OS Trixie, 64-bit, Chromium 156, software-composited because no display was
+attached; real HDMI output may do better). Dropped frames, 30 fps H.264 clips:
+
+| Playing | Dropped |
+| --- | --- |
+| one 640×360 | ~1% |
+| two 640×360 | ~4% |
+| two 640×360 + one 1280×720 | ~30% (on *every* window) |
+
+Takeaway on a 3B: several small windows are fine, a single 720p clip drags all of them down. The control UI shows
+live dropped-frame counts under the player so you can tune. Dropped frames are per-window in the status feed.
+
 - **Pre-scale clips** to about the size the window occupies on the projector. A 4K clip in a 300 px window wastes decode time.
   `scripts/transcode.sh input.mov 960 30` makes a Pi-friendly H.264 MP4 in `media/`.
 - Pi 4 has hardware H.264 decode; Pi 5 decodes H.264 in software (fine for several 720p clips, fewer at 1080p).
